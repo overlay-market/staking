@@ -1,0 +1,14 @@
+{
+  "name": "staking",
+  "scripts": {
+    "compile": "hardhat compile",
+    "coverage": "hardhat coverage",
+    "test": "hardhat test"
+  },
+  "repository": {
+    "url": "https://github.com/overlay-market/staking.git"
+  },
+  "devDependencies": {
+    "hardhat": "^2.1.2"
+  }
+}

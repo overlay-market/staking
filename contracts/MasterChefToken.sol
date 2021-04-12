@@ -5,16 +5,15 @@
 //
 // Ctrl+f for XXX to see all the modifications.
 
-// XXX: pragma solidity 0.6.12;
-pragma solidity ^0.8.0;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; // XXX import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol"; // XXX import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol"; // XXX import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./OVLToken.sol"; // XXX import "./SushiToken.sol";
+import "./interfaces/IRewardToken.sol"; // XXX import "./SushiToken.sol";
 
 
 
@@ -90,7 +89,7 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
         uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
     }
     // The SUSHI TOKEN!
-    OVLToken public sushi; // XXX SushiToken public sushi;
+    IRewardToken public sushi; // XXX SushiToken public sushi;
     // Dev address.
     address public devaddr;
     // Block number when bonus SUSHI period ends.
@@ -99,6 +98,8 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
     uint256 public sushiPerBlock;
     // Bonus muliplier for early sushi makers.
     uint256 public constant BONUS_MULTIPLIER = 10;
+    // XXX Dev addr reward divisor
+    uint256 public constant DEV_REWARD_DIVISOR = 10;
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
     IMigratorChef public migrator;
     // Info of each pool.
@@ -118,7 +119,7 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
     );
 
     constructor(
-        OVLToken _sushi, // XXX SushiToken _sushi,
+        IRewardToken _sushi, // XXX SushiToken _sushi,
         address _devaddr,
         uint256 _sushiPerBlock,
         uint256 _startBlock,
@@ -256,7 +257,7 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
             multiplier.mul(sushiPerBlock).mul(pool.allocPoint).div(
                 totalAllocPoint
             );
-        sushi.mint(devaddr, sushiReward.div(10));
+        sushi.mint(devaddr, sushiReward.div(DEV_REWARD_DIVISOR)); // XXX sushi.mint(devaddr, sushiReward.div(10));
         sushi.mint(address(this), sushiReward);
         pool.accSushiPerShare = pool.accSushiPerShare.add(
             sushiReward.mul(1e12).div(lpSupply)

@@ -332,6 +332,8 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
         UserInfo storage userTo = userInfo[pid][to];
         require(userFrom.amount >= amount, "transfer: not good");
 
+        // TODO: Fix rewardDebt logic ... will go out of sync here on transfer
+        // and zero out pending rewards for userFrom without sending the actual rewards
         userFrom.amount = userFrom.amount.sub(amount);
         userFrom.rewardDebt = userFrom.amount.mul(pool.accSushiPerShare).div(1e12);
 

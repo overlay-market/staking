@@ -8,6 +8,7 @@ Things that need to be done, checked, verified, tested, etc.
 - [ ] SUSHI => OVL
 - [ ] alter init of original master chef tests to give minter role to chef contract for reward token
 - [x] transfer() function overrides to change userInfo
+- [ ] Fix transfer() rewardDebt update logic in _beforeTokenTransfer hook
 - [ ] Test transfer function hook HEAVILY to make sure is ok and amounts remain in sync
 - [x] Zero out staking credit balance on emergency withdraw
 - [ ] Test emergency withdraw HEAVILY to make sure is ok

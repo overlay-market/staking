@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IRewardToken.sol"; // XXX import "./SushiToken.sol";
+import "./interfaces/IRewardsToken.sol"; // XXX import "./SushiToken.sol";
 
 
 
@@ -43,24 +43,6 @@ interface IMigratorChef {
 // Token can then be transferred/staked in other contracts for rewards
 // elsewhere (e.g. Overlay treasury contracts for trading fees)
 //
-// TODO:
-//   1. Set "uri" => Rainbow Destruction Cats uri: [x]
-//   2. mint/burn ERC1155 in deposit/withdraw: [x]
-//   3. SUSHI => OVL: []
-//   4. transfer() function overrides to change userInfo: [x]
-//   5. Test transfer function hook HEAVILY to make sure is ok and amounts remain in sync: []
-//   6. Zero out staking credit balance on emergency withdraw: [x]
-//   7. Test emergency withdraw HEAVILY to make sure is ok: []
-//   8. OVLTreasury.sol (ERC1155 compatible/receiver): []
-//   9. Investigate adding Keep3rV2OracleFactory.update(pair) call on updatePool(): [x]
-//       a. MasterChefToken needs to register as keeper?: Y [x] OR remove keeper modifier on kv2of.update()
-//       b. Keep3rV2OracleFactory.update(pair)/Keep3rV2Oracle.update() doesn't revert?: only on factory, keeper modifiers [x]
-//           - keeper modifier on kv2of.update(): would revert if not keeper calling => need to register MasterChefToken as keeper or remove
-//           - factory modifier on kv2o.update(): would revert if not factory calling => need to call kv2of.update(pair)
-//           - kv2of.update(pair) && kv2o.update(pair) returns bool: [x]
-//           - IUniwapV2Pair(pair) methods revert?:
-//               - getReserves() reverts?: N [x]
-//               - priceCumulativeLast() reverts?: N [x]
 // XXX contract MasterChef is Ownable
 contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}.json") {
     using SafeMath for uint256;
@@ -89,7 +71,7 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
         uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
     }
     // The SUSHI TOKEN!
-    IRewardToken public sushi; // XXX SushiToken public sushi;
+    IRewardsToken public sushi; // XXX SushiToken public sushi;
     // Dev address.
     address public devaddr;
     // Block number when bonus SUSHI period ends.
@@ -119,7 +101,7 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
     );
 
     constructor(
-        IRewardToken _sushi, // XXX SushiToken _sushi,
+        IRewardsToken _sushi, // XXX SushiToken _sushi,
         address _devaddr,
         uint256 _sushiPerBlock,
         uint256 _startBlock,

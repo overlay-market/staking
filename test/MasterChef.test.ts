@@ -1,4 +1,3 @@
-
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { advanceBlockTo } from "./utilities"
@@ -12,14 +11,15 @@ describe("MasterChef", function () {
     this.dev = this.signers[3]
     this.minter = this.signers[4]
 
-    this.MasterChef = await ethers.getContractFactory("MasterChef")
-    this.SushiToken = await ethers.getContractFactory("SushiToken")
+    this.MasterChef = await ethers.getContractFactory("MasterChefToken")
+    this.SushiToken = await ethers.getContractFactory("RewardsTokenMock");
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
   })
 
   beforeEach(async function () {
     this.sushi = await this.SushiToken.deploy()
     await this.sushi.deployed()
+    // TODO: access control for masterChefToken to mint sushitoken ..
   })
 
   it("should set correct state variables", async function () {

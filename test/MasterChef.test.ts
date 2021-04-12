@@ -15,7 +15,7 @@ describe("MasterChef", function () {
     this.minter = this.signers[4]
 
     this.MasterChef = await ethers.getContractFactory("MasterChefToken")
-    this.SushiToken = await ethers.getContractFactory("RewardsTokenMock");
+    this.SushiToken = await ethers.getContractFactory("ERC20OwnableMock") // await ethers.getContractFactory("RewardsTokenMock");
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
   })
 

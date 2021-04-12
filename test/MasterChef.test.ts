@@ -2,6 +2,9 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { advanceBlockTo } from "./utilities"
 
+// COPIED AND MODIFIED from SushiSwap:
+// https://github.com/sushiswap/sushiswap/blob/master/test/MasterChef.test.ts
+
 describe("MasterChef", function () {
   before(async function () {
     this.signers = await ethers.getSigners()

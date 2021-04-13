@@ -5,8 +5,8 @@ import { advanceBlockTo } from "./utilities"
 // COPIED AND MODIFIED from SushiSwap:
 // https://github.com/sushiswap/sushiswap/blob/master/test/MasterChef.test.ts
 
-describe("MasterChef", function () {
-  before(async function () {
+describe("MasterChefToken", function() {
+  before(async function() {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
     this.bob = this.signers[1]
@@ -15,34 +15,47 @@ describe("MasterChef", function () {
     this.minter = this.signers[4]
 
     this.MasterChef = await ethers.getContractFactory("MasterChefToken")
-    this.SushiToken = await ethers.getContractFactory("ERC20OwnableMock") // await ethers.getContractFactory("RewardsTokenMock");
+    this.SushiToken = await ethers.getContractFactory("RewardsTokenMock"); // Using rewards token with AccessControl
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
   })
 
-  beforeEach(async function () {
+  beforeEach(async function() {
     this.sushi = await this.SushiToken.deploy()
     await this.sushi.deployed()
-    // TODO: access control for masterChefToken to mint sushitoken ..
   })
 
-  it("should set correct state variables", async function () {
+  it("grants the admin role to the deployer", async function() {
+    expect(await this.sushi.hasRole(await this.sushi.ADMIN_ROLE(), this.alice.address)).is.true
+  });
+
+  it("grants the minter role to the deployer", async function() {
+    expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.alice.address)).is.true
+  });
+
+  it("should set correct state variables", async function() {
     this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "1000", "0", "1000")
     await this.chef.deployed()
 
-    await this.sushi.transferOwnership(this.chef.address)
+    // XXX: await this.sushi.transferOwnership(this.chef.address)
+    await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
+    expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
 
     const sushi = await this.chef.sushi()
     const devaddr = await this.chef.devaddr()
-    const owner = await this.sushi.owner()
+    // const owner = await this.sushi.owner()
 
     expect(sushi).to.equal(this.sushi.address)
     expect(devaddr).to.equal(this.dev.address)
-    expect(owner).to.equal(this.chef.address)
+    // expect(owner).to.equal(this.chef.address)
   })
 
-  it("should allow dev and only dev to update dev", async function () {
+  it("should allow dev and only dev to update dev", async function() {
     this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "1000", "0", "1000")
     await this.chef.deployed()
+
+    // XXX: Minter role grant
+    await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
+    expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
 
     expect(await this.chef.devaddr()).to.equal(this.dev.address)
 
@@ -57,8 +70,8 @@ describe("MasterChef", function () {
     expect(await this.chef.devaddr()).to.equal(this.alice.address)
   })
 
-  context("With ERC/LP token added to the field", function () {
-    beforeEach(async function () {
+  context("With ERC/LP token added to the field", function() {
+    beforeEach(async function() {
       this.lp = await this.ERC20Mock.deploy("LPToken", "LP", "10000000000")
 
       await this.lp.transfer(this.alice.address, "1000")
@@ -76,10 +89,14 @@ describe("MasterChef", function () {
       await this.lp2.transfer(this.carol.address, "1000")
     })
 
-    it("should allow emergency withdraw", async function () {
+    it("should allow emergency withdraw", async function() {
       // 100 per block farming rate starting at block 100 with bonus until block 1000
       this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "100", "100", "1000")
       await this.chef.deployed()
+
+      // XXX: Minter role grant
+      await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
+      expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
 
       await this.chef.add("100", this.lp.address, true)
 
@@ -94,12 +111,15 @@ describe("MasterChef", function () {
       expect(await this.lp.balanceOf(this.bob.address)).to.equal("1000")
     })
 
-    it("should give out SUSHIs only after farming time", async function () {
+    it("should give out SUSHIs only after farming time", async function() {
       // 100 per block farming rate starting at block 100 with bonus until block 1000
       this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "100", "100", "1000")
       await this.chef.deployed()
 
-      await this.sushi.transferOwnership(this.chef.address)
+      // await this.sushi.transferOwnership(this.chef.address)
+      // XXX: Minter role grant
+      await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
+      expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
 
       await this.chef.add("100", this.lp.address, true)
 
@@ -130,11 +150,16 @@ describe("MasterChef", function () {
       expect(await this.sushi.totalSupply()).to.equal("5500")
     })
 
-    it("should not distribute SUSHIs if no one deposit", async function () {
+    it("should not distribute SUSHIs if no one deposit", async function() {
       // 100 per block farming rate starting at block 200 with bonus until block 1000
       this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "100", "200", "1000")
       await this.chef.deployed()
-      await this.sushi.transferOwnership(this.chef.address)
+
+      // await this.sushi.transferOwnership(this.chef.address)
+      // XXX: Minter role grant
+      await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
+      expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
+
       await this.chef.add("100", this.lp.address, true)
       await this.lp.connect(this.bob).approve(this.chef.address, "1000")
       await advanceBlockTo("199")
@@ -155,11 +180,16 @@ describe("MasterChef", function () {
       expect(await this.lp.balanceOf(this.bob.address)).to.equal("1000")
     })
 
-    it("should distribute SUSHIs properly for each staker", async function () {
+    it("should distribute SUSHIs properly for each staker", async function() {
       // 100 per block farming rate starting at block 300 with bonus until block 1000
       this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "100", "300", "1000")
       await this.chef.deployed()
-      await this.sushi.transferOwnership(this.chef.address)
+
+      // await this.sushi.transferOwnership(this.chef.address)
+      // XXX: Minter role grant
+      await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
+      expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
+
       await this.chef.add("100", this.lp.address, true)
       await this.lp.connect(this.alice).approve(this.chef.address, "1000", {
         from: this.alice.address,
@@ -223,10 +253,14 @@ describe("MasterChef", function () {
       expect(await this.lp.balanceOf(this.carol.address)).to.equal("1000")
     })
 
-    it("should give proper SUSHIs allocation to each pool", async function () {
+    it("should give proper SUSHIs allocation to each pool", async function() {
       // 100 per block farming rate starting at block 400 with bonus until block 1000
       this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "100", "400", "1000")
-      await this.sushi.transferOwnership(this.chef.address)
+      // await this.sushi.transferOwnership(this.chef.address)
+      // XXX: Minter role grant
+      await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
+      expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
+
       await this.lp.connect(this.alice).approve(this.chef.address, "1000", { from: this.alice.address })
       await this.lp2.connect(this.bob).approve(this.chef.address, "1000", { from: this.bob.address })
       // Add first LP to the pool with allocation 1
@@ -250,10 +284,14 @@ describe("MasterChef", function () {
       expect(await this.chef.pendingSushi(1, this.bob.address)).to.equal("3333")
     })
 
-    it("should stop giving bonus SUSHIs after the bonus period ends", async function () {
+    it("should stop giving bonus SUSHIs after the bonus period ends", async function() {
       // 100 per block farming rate starting at block 500 with bonus until block 600
       this.chef = await this.MasterChef.deploy(this.sushi.address, this.dev.address, "100", "500", "600")
-      await this.sushi.transferOwnership(this.chef.address)
+      // await this.sushi.transferOwnership(this.chef.address)
+      // XXX: Minter role grant
+      await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
+      expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
+
       await this.lp.connect(this.alice).approve(this.chef.address, "1000", { from: this.alice.address })
       await this.chef.add("1", this.lp.address, true)
       // Alice deposits 10 LPs at block 590

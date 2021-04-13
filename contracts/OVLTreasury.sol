@@ -4,8 +4,8 @@ pragma solidity ^0.6.0;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./interfaces/IRewardsToken.sol";
 import "./OVLChef.sol";
 
 
@@ -13,13 +13,13 @@ contract OVLTreasury is ERC1155Holder, ERC20("OVLTreasury", "tOVL") {
     using SafeMath for uint256;
 
     OVLChef public chef;
-    IRewardsToken public ovl;
+    IERC20 public ovl;
     uint256 public poolId; // pool id for OVL-ETH pool 2
 
     constructor(
         OVLChef _chef,
         uint256 _pid,
-        IRewardsToken _ovl
+        IERC20 _ovl
     ) public {
         chef = _chef;
         poolId = _pid;

@@ -46,10 +46,6 @@ contract OVLTreasury is ERC1155Holder, ERC20("OVLTreasury", "tOVL") {
 
     // Withdraw shares in treasury to collect treasury rewards and receive back chef pool credit
     function withdraw(uint256 _share) public {
-        // Must harvest oustanding rewards from chef PRIOR to transfer on behalf of all chef pool credits locked
-        // so pool rewards are up to date and no issues with straggler rewards from beforeTransfer hook on erc1155 transfer
-        chef.harvest(poolId, address(this));
-
         // Calc amount to of reward in treasury to send given shares burnt
         uint256 totalShares = totalSupply();
         uint256 rewards = _share.mul(ovl.balanceOf(address(this))).div(totalShares);
@@ -62,6 +58,4 @@ contract OVLTreasury is ERC1155Holder, ERC20("OVLTreasury", "tOVL") {
         // Make sure chef transfer of pool credit at end given ERC1155 callback in safeTransferFrom()
         chef.safeTransferFrom(address(this), msg.sender, poolId, credits, "");
     }
-
-    function emergencyWithdraw(uint256 _share) public {}
 }

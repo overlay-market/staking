@@ -4,15 +4,29 @@ Things that need to be done, checked, verified, tested, etc.
 
 
 - [x] Set "uri" => Rainbow Destruction Cats uri
+
 - [x] mint/burn ERC1155 in deposit/withdraw
+
 - [ ] SUSHI => OVL
+
 - [ ] alter init of original master chef tests to give minter role to chef contract for reward token
+
 - [x] transfer() function overrides to change userInfo
-- [ ] Fix transfer() rewardDebt update logic in _beforeTokenTransfer hook
-- [ ] Test transfer function hook HEAVILY to make sure is ok and amounts remain in sync
+
+- [x] Fix transfer() rewardDebt update logic in _beforeTokenTransfer hook
+
+- [ ] Test transfer function hook HEAVILY to make sure is ok
+  - [ ] Verify reward debt and amounts remain in sync
+  - [ ] Verify harvested rewards prior to transfer are done properly
+  - [ ] Check edge cases e.g., send multiple of the same id in hook
+
+
 - [x] Zero out staking credit balance on emergency withdraw
+
 - [ ] Test emergency withdraw HEAVILY to make sure is ok
-- [ ] OVLTreasury.sol (ERC1155 compatible/receiver)
+
+- [ ] Treasury.sol (ERC1155 compatible/receiver)
+
 - [x] Investigate adding Keep3rV2OracleFactory.update(pair) call on updatePool()
   - [x] MasterChefToken needs to register as keeper?: Y OR remove keeper modifier on kv2of.update()
   - [x] Keep3rV2OracleFactory.update(pair)/Keep3rV2Oracle.update() doesn't revert?: only on factory, keeper modifiers

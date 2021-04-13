@@ -305,11 +305,11 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
         // XXX: Zero out staking credit balance as well; no ERC1155 callback in _burn()
         uint256 balance = balanceOf(msg.sender, _pid);
         _burn(msg.sender, _pid, balance);
-        user.amount = 0;
-        user.rewardDebt = 0;
 
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+        user.amount = 0;
+        user.rewardDebt = 0;
     }
 
     // XXX: Harvest pending rewards for transaction sender to `to`.

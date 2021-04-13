@@ -315,83 +315,83 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
     // XXX: Harvest pending rewards for transaction sender to `to`.
     // Closer to Alchemix StakingPools.sol claim() functionality vs Chef V2 (i.e. no delegrate call): https://github.com/alchemix-finance/alchemix-protocol/blob/master/contracts/StakingPools.sol#L245
     function harvest(uint256 _pid, address _to) public {
-      PoolInfo storage pool = poolInfo[_pid];
-      UserInfo storage user = userInfo[_pid][msg.sender];
-      require(user.amount > 0, "harvest: not good");
-      updatePool(_pid);
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+        require(user.amount > 0, "harvest: not good");
+        updatePool(_pid);
 
-      uint256 pending = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
 
-      // Effects
-      user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        // Effects
+        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
 
-      // Interactions
-      safeSushiTransfer(_to, pending);
-      emit Harvest(msg.sender, _pid, pending);
+        // Interactions
+        safeSushiTransfer(_to, pending);
+        emit Harvest(msg.sender, _pid, pending);
     }
 
     // XXX: Ensures user info is in sync with staking rights on transfer
     function _beforeTokenTransfer(
-      address _operator,
-      address _from,
-      address _to,
-      uint256[] memory _ids,
-      uint256[] memory _amounts,
-      bytes memory _data
+        address _operator,
+        address _from,
+        address _to,
+        uint256[] memory _ids,
+        uint256[] memory _amounts,
+        bytes memory _data
     ) internal virtual override(ERC1155) {
-      // On deposit/withdraw, don't do anything to user info map since already taken care of
-      if (_from == address(0) || _to == address(0) || _from == _to) {
-        return;
-      }
-
-      // Change user info for each pool id and amount before transferring staking credit
-      // Harvest pending rewards from each pool for both from and to, resetting reward debts accordingly
-      uint256 pendingFrom = 0;
-      uint256 pendingTo = 0;
-
-      for (uint256 i = 0; i < _ids.length; ++i) {
-        uint256 pid = _ids[i];
-        uint256 amount = _amounts[i];
-
-        // For selected pool, should be equivalent to
-        //   1. withdraw() by userFrom
-        //   2. Send LP token from userFrom to userTo
-        //   3. deposit() by userTo
-        // ... except LP token never moves
-        PoolInfo storage pool = poolInfo[pid];
-        UserInfo storage userFrom = userInfo[pid][_from];
-        UserInfo storage userTo = userInfo[pid][_to];
-        require(userFrom.amount >= amount, "transfer: not good");
-
-        // Make sure pool is updated before calc pending
-        updatePool(pid);
-
-        // Add to existing pending amounts to harvest rewards
-        pendingFrom = pendingFrom.add(
-          userFrom.amount.mul(pool.accSushiPerShare).div(1e12).sub(
-              userFrom.rewardDebt
-          )
-        );
-
-        if (userTo.amount > 0) {
-          pendingTo = pendingTo.add(
-            userTo.amount.mul(pool.accSushiPerShare).div(1e12).sub(
-                userTo.rewardDebt
-            )
-          );
+        // On deposit/withdraw, don't do anything to user info map since already taken care of
+        if (_from == address(0) || _to == address(0) || _from == _to) {
+            return;
         }
 
-        // Alter amounts for each user's pool share and reset reward debt given pending rewards to be transferred
-        userFrom.amount = userFrom.amount.sub(amount);
-        userFrom.rewardDebt = userFrom.amount.mul(pool.accSushiPerShare).div(1e12);
+        // Change user info for each pool id and amount before transferring staking credit
+        // Harvest pending rewards from each pool for both from and to, resetting reward debts accordingly
+        uint256 pendingFrom = 0;
+        uint256 pendingTo = 0;
 
-        userTo.amount = userTo.amount.add(amount);
-        userTo.rewardDebt = userTo.amount.mul(pool.accSushiPerShare).div(1e12);
-      }
+        for (uint256 i = 0; i < _ids.length; ++i) {
+            uint256 pid = _ids[i];
+            uint256 amount = _amounts[i];
 
-      // Send off the accumulated pending rewards
-      safeSushiTransfer(_from, pendingFrom);
-      safeSushiTransfer(_to, pendingTo);
+            // For selected pool, should be equivalent to
+            //   1. withdraw() by userFrom
+            //   2. Send LP token from userFrom to userTo
+            //   3. deposit() by userTo
+            // ... except LP token never moves
+            PoolInfo storage pool = poolInfo[pid];
+            UserInfo storage userFrom = userInfo[pid][_from];
+            UserInfo storage userTo = userInfo[pid][_to];
+            require(userFrom.amount >= amount, "transfer: not good");
+
+            // Make sure pool is updated before calc pending
+            updatePool(pid);
+
+            // Add to existing pending amounts to harvest rewards
+            pendingFrom = pendingFrom.add(
+                userFrom.amount.mul(pool.accSushiPerShare).div(1e12).sub(
+                    userFrom.rewardDebt
+                )
+            );
+
+            if (userTo.amount > 0) {
+                pendingTo = pendingTo.add(
+                    userTo.amount.mul(pool.accSushiPerShare).div(1e12).sub(
+                        userTo.rewardDebt
+                    )
+                );
+            }
+
+            // Alter amounts for each user's pool share and reset reward debt given pending rewards to be transferred
+            userFrom.amount = userFrom.amount.sub(amount);
+            userFrom.rewardDebt = userFrom.amount.mul(pool.accSushiPerShare).div(1e12);
+
+            userTo.amount = userTo.amount.add(amount);
+            userTo.rewardDebt = userTo.amount.mul(pool.accSushiPerShare).div(1e12);
+        }
+
+        // Send off the accumulated pending rewards
+        safeSushiTransfer(_from, pendingFrom);
+        safeSushiTransfer(_to, pendingTo);
     }
 
     // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.

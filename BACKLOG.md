@@ -21,6 +21,8 @@ Things that need to be done, checked, verified, tested, etc.
   - [ ] Check edge cases e.g., send multiple of the same id in hook
 
 
+- [ ] Test harvest function
+
 - [x] Zero out staking credit balance on emergency withdraw
 
 - [ ] Test emergency withdraw HEAVILY to make sure is ok

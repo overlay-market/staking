@@ -2,6 +2,8 @@
 
 // COPIED AND MODIFIED from SushiSwap:
 // https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChef.sol
+// and
+// https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol
 //
 // Ctrl+f for XXX to see all the modifications.
 
@@ -99,6 +101,8 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
         uint256 indexed pid,
         uint256 amount
     );
+    // XXX: Harvest event from V2
+    event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
         IRewardsToken _sushi, // XXX SushiToken _sushi,
@@ -308,17 +312,35 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
     }
 
+    // XXX: Harvest pending rewards for transaction sender to `to`.
+    // Closer to Alchemix StakingPools.sol claim() functionality vs Chef V2 (i.e. no delegrate call): https://github.com/alchemix-finance/alchemix-protocol/blob/master/contracts/StakingPools.sol#L245
+    function harvest(uint256 _pid, address _to) public {
+      PoolInfo storage pool = poolInfo[_pid];
+      UserInfo storage user = userInfo[_pid][msg.sender];
+      require(user.amount > 0, "harvest: not good");
+      updatePool(_pid);
+
+      uint256 pending = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+
+      // Effects
+      user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+
+      // Interactions
+      safeSushiTransfer(_to, pending);
+      emit Harvest(msg.sender, _pid, pending);
+    }
+
     // XXX: Ensures user info is in sync with staking rights on transfer
     function _beforeTokenTransfer(
-      address operator,
-      address from,
-      address to,
-      uint256[] memory ids,
-      uint256[] memory amounts,
-      bytes memory data
+      address _operator,
+      address _from,
+      address _to,
+      uint256[] memory _ids,
+      uint256[] memory _amounts,
+      bytes memory _data
     ) internal virtual override(ERC1155) {
       // On deposit/withdraw, don't do anything to user info map since already taken care of
-      if (from == address(0) || to == address(0) || from == to) {
+      if (_from == address(0) || _to == address(0) || _from == _to) {
         return;
       }
 
@@ -327,9 +349,9 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
       uint256 pendingFrom = 0;
       uint256 pendingTo = 0;
 
-      for (uint256 i = 0; i < ids.length; ++i) {
-        uint256 pid = ids[i];
-        uint256 amount = amounts[i];
+      for (uint256 i = 0; i < _ids.length; ++i) {
+        uint256 pid = _ids[i];
+        uint256 amount = _amounts[i];
 
         // For selected pool, should be equivalent to
         //   1. withdraw() by userFrom
@@ -337,8 +359,8 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
         //   3. deposit() by userTo
         // ... except LP token never moves
         PoolInfo storage pool = poolInfo[pid];
-        UserInfo storage userFrom = userInfo[pid][from];
-        UserInfo storage userTo = userInfo[pid][to];
+        UserInfo storage userFrom = userInfo[pid][_from];
+        UserInfo storage userTo = userInfo[pid][_to];
         require(userFrom.amount >= amount, "transfer: not good");
 
         // Make sure pool is updated before calc pending
@@ -368,8 +390,8 @@ contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/po
       }
 
       // Send off the accumulated pending rewards
-      safeSushiTransfer(from, pendingFrom);
-      safeSushiTransfer(to, pendingTo);
+      safeSushiTransfer(_from, pendingFrom);
+      safeSushiTransfer(_to, pendingTo);
     }
 
     // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.

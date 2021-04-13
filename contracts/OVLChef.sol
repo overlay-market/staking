@@ -160,6 +160,12 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
         poolInfo[_pid].allocPoint = _allocPoint;
     }
 
+    // XXX: Set the uri for the token
+    function setURI(string memory _uri) public onlyOwner {
+        _setURI(_uri);
+    }
+
+
     // Set the migrator contract. Can only be called by the owner.
     function setMigrator(IMigratorChef _migrator) public onlyOwner {
         migrator = _migrator;
@@ -345,53 +351,42 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
         }
 
         // Change user info for each pool id and amount before transferring staking credit
-        // Harvest pending rewards from each pool for both from and to, resetting reward debts accordingly
-        uint256 pendingFrom = 0;
-        uint256 pendingTo = 0;
-
+        // Should simply move over, but NOT harvest, accumulated rewards
         for (uint256 i = 0; i < _ids.length; ++i) {
             uint256 pid = _ids[i];
             uint256 amount = _amounts[i];
 
-            // For selected pool, should be equivalent to
-            //   1. withdraw() by userFrom
-            //   2. Send LP token from userFrom to userTo
-            //   3. deposit() by userTo
-            // ... except LP token never moves
             PoolInfo storage pool = poolInfo[pid];
             UserInfo storage userFrom = userInfo[pid][_from];
             UserInfo storage userTo = userInfo[pid][_to];
             require(userFrom.amount >= amount, "transfer: not good");
 
-            // Make sure pool is updated before calc pending
-            updatePool(pid);
+            // Alter amounts for each user's pool share and reward debt given pending rewards to be transferred
+            // Readjust reward debts based on what rewardDebt would have been in prior deposit/withdraw if amount were changed to new value
+            // i.e. in prior deposit/withdraw to zero out rewards with harvest, we had set:
+            //
+            //    user.rewardDebt = user.amount * pool.accSushiPerShare(t=0)
+            //
+            // where t=0 indicates pool.accSushiPerShare value at last deposit/withdraw.
+            // pool.accSushiPerShare has potentially changed since then (more rewards accumulated; t -> t*), but we
+            // don't want to harvest them here. Instead transfer the rights to rewards accumulatedf such that
+            // after we change user.amount value in userInfo, we rescale reward debt by:
+            //
+            //    newRewardDebt = oldRewardDebt * (newUserAmount / oldUserAmount) = newUserAmount * pool.accSushiPerShare(t=0)
+            //
+            // then pending reward changes to
+            //
+            //    new pending reward = (newUserAmount * pool.accSushiPerShare(t=t*)) - newRewardDebt
+            //                       = newUserAmount * (pool.accSushiPerShare(t=t*) - pool.accSushiPerShare(t=0))
+            //
+            uint256 fromAmount = userFrom.amount;
+            userFrom.amount = fromAmount.sub(amount);
+            userFrom.rewardDebt = userFrom.rewardDebt.mul(userFrom.amount).div(fromAmount);
 
-            // Add to existing pending amounts to harvest rewards
-            pendingFrom = pendingFrom.add(
-                userFrom.amount.mul(pool.accSushiPerShare).div(1e12).sub(
-                    userFrom.rewardDebt
-                )
-            );
-
-            if (userTo.amount > 0) {
-                pendingTo = pendingTo.add(
-                    userTo.amount.mul(pool.accSushiPerShare).div(1e12).sub(
-                        userTo.rewardDebt
-                    )
-                );
-            }
-
-            // Alter amounts for each user's pool share and reset reward debt given pending rewards to be transferred
-            userFrom.amount = userFrom.amount.sub(amount);
-            userFrom.rewardDebt = userFrom.amount.mul(pool.accSushiPerShare).div(1e12);
-
+            uint256 toAmount = userTo.amount;
             userTo.amount = userTo.amount.add(amount);
-            userTo.rewardDebt = userTo.amount.mul(pool.accSushiPerShare).div(1e12);
+            userTo.rewardDebt = userTo.rewardDebt.mul(userTo.amount).div(toAmount);
         }
-
-        // Send off the accumulated pending rewards
-        safeSushiTransfer(_from, pendingFrom);
-        safeSushiTransfer(_to, pendingTo);
     }
 
     // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.

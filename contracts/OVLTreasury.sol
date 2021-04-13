@@ -26,7 +26,7 @@ contract OVLTreasury is ERC1155Holder, ERC20("OVLTreasury", "tOVL") {
         ovl = _ovl;
     }
 
-    // Deposit chef pool credits to treasury for double rewards
+    // Deposit chef pool credits for treasury rewards
     function deposit(uint256 _amount) public {
         // Amount of credits locked in treasury
         uint256 totalCreditsStaked = chef.balanceOf(address(this), poolId);
@@ -40,14 +40,14 @@ contract OVLTreasury is ERC1155Holder, ERC20("OVLTreasury", "tOVL") {
             _mint(msg.sender, shares);
         }
 
-        // Make sure chef transfer of pool credit at end given ERC1155 callback in transfer()
+        // Make sure chef transfer of pool credit at end given ERC1155 callback in safeTransferFrom()
         chef.safeTransferFrom(msg.sender, address(this), poolId, _amount, "");
     }
 
-    // Withdraw shares in treasury to collect double rewards and receive back pool credit
+    // Withdraw shares in treasury to collect treasury rewards and receive back chef pool credit
     function withdraw(uint256 _share) public {
-        // Harvest oustanding rewards from chef PRIOR to transfer on behalf of all pool credits locked
-        // so pool rewards are up to date
+        // Must harvest oustanding rewards from chef PRIOR to transfer on behalf of all chef pool credits locked
+        // so pool rewards are up to date and no issues with straggler rewards from beforeTransfer hook on erc1155 transfer
         chef.harvest(poolId, address(this));
 
         // Calc amount to of reward in treasury to send given shares burnt
@@ -59,7 +59,9 @@ contract OVLTreasury is ERC1155Holder, ERC20("OVLTreasury", "tOVL") {
         _burn(msg.sender, _share);
         ovl.transfer(msg.sender, rewards);
 
-        // Make sure chef transfer of pool credit at end given ERC1155 callback in transfer()
+        // Make sure chef transfer of pool credit at end given ERC1155 callback in safeTransferFrom()
         chef.safeTransferFrom(address(this), msg.sender, poolId, credits, "");
     }
+
+    function emergencyWithdraw(uint256 _share) public {}
 }

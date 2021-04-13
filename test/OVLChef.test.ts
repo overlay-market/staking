@@ -5,7 +5,7 @@ import { advanceBlockTo } from "./utilities"
 // COPIED AND MODIFIED from SushiSwap:
 // https://github.com/sushiswap/sushiswap/blob/master/test/MasterChef.test.ts
 
-describe("MasterChefToken", function() {
+describe("OVLChef", function() {
   before(async function() {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
@@ -14,7 +14,7 @@ describe("MasterChefToken", function() {
     this.dev = this.signers[3]
     this.minter = this.signers[4]
 
-    this.MasterChef = await ethers.getContractFactory("MasterChefToken")
+    this.MasterChef = await ethers.getContractFactory("OVLChef")
     this.SushiToken = await ethers.getContractFactory("RewardsTokenMock"); // Using rewards token with AccessControl
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
   })

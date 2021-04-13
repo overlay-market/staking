@@ -40,13 +40,13 @@ interface IMigratorChef {
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
 //
-// XXX MasterChefToken: Strap a token to it!
-// Adding an ERC 1155 to track a user's share of each pool.
+// XXX OVLChef: Strap a token to it!
+// Adding an ERC 1155 to MasterChef to track a user's share of each pool.
 // Token can then be transferred/staked in other contracts for rewards
 // elsewhere (e.g. Overlay treasury contracts for trading fees)
 //
 // XXX contract MasterChef is Ownable
-contract MasterChefToken is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}.json") {
+contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}.json") {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     // Info of each user.

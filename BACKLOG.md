@@ -9,7 +9,7 @@ Things that need to be done, checked, verified, tested, etc.
 
 - [ ] SUSHI => OVL
 
-- [ ] alter init of original master chef tests to give minter role to chef contract for reward token
+- [x] alter init of original master chef tests to give minter role to chef contract for reward token
 
 - [x] transfer() function overrides to change userInfo
 

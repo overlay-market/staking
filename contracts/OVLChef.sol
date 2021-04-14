@@ -6,6 +6,9 @@
 // https://github.com/sushiswap/sushiswap/blob/master/contracts/MasterChefV2.sol
 //
 // Ctrl+f for XXX to see all the modifications.
+//
+// All `sushi` related variable names replaced with `reward`
+//    e.x. `safeSushiTransfer` => `safeRewardTransfer`
 
 pragma solidity 0.6.12;
 
@@ -15,7 +18,7 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IRewardsToken.sol"; // XXX import "./SushiToken.sol";
+import "./interfaces/IRewardToken.sol"; // XXX import "./SushiToken.sol";
 
 
 
@@ -72,16 +75,16 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
         IERC20 lpToken; // Address of LP token contract.
         uint256 allocPoint; // How many allocation points assigned to this pool. SUSHIs to distribute per block.
         uint256 lastRewardBlock; // Last block number that SUSHIs distribution occurs.
-        uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
+        uint256 accRewardPerShare; // XXX: accSushiPerShare // Accumulated SUSHIs per share, times 1e12. See below.
     }
     // The SUSHI TOKEN!
-    IRewardsToken public sushi; // XXX SushiToken public sushi;
+    IRewardToken public rewardToken; // XXX SushiToken public sushi;
     // Dev address.
     address public devaddr;
     // Block number when bonus SUSHI period ends.
     uint256 public bonusEndBlock;
     // SUSHI tokens created per block.
-    uint256 public sushiPerBlock;
+    uint256 public rewardPerBlock; // XXX: uint256 public sushiPerBlock;
     // Bonus muliplier for early sushi makers.
     uint256 public constant BONUS_MULTIPLIER = 10;
     // XXX Dev addr reward divisor
@@ -107,15 +110,15 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
-        IRewardsToken _sushi, // XXX SushiToken _sushi,
+        IRewardToken _rewardToken, // XXX SushiToken _sushi,
         address _devaddr,
-        uint256 _sushiPerBlock,
+        uint256 _rewardPerBlock,
         uint256 _startBlock,
         uint256 _bonusEndBlock
     ) public {
-        sushi = _sushi;
+        rewardToken = _rewardToken;
         devaddr = _devaddr;
-        sushiPerBlock = _sushiPerBlock;
+        rewardPerBlock = _rewardPerBlock;
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
     }
@@ -142,7 +145,7 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
-                accSushiPerShare: 0
+                accRewardPerShare: 0
             })
         );
     }
@@ -204,27 +207,28 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
     }
 
     // View function to see pending SUSHIs on frontend.
-    function pendingSushi(uint256 _pid, address _user)
+    // XXX: function pendingSushi(uint256 _pid, address _user)
+    function pendingReward(uint256 _pid, address _user)
         external
         view
         returns (uint256)
     {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accSushiPerShare = pool.accSushiPerShare;
+        uint256 accRewardPerShare = pool.accRewardPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier =
                 getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 sushiReward =
-                multiplier.mul(sushiPerBlock).mul(pool.allocPoint).div(
+            uint256 reward =
+                multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(
                     totalAllocPoint
                 );
-            accSushiPerShare = accSushiPerShare.add(
-                sushiReward.mul(1e12).div(lpSupply)
+            accRewardPerShare = accRewardPerShare.add(
+                reward.mul(1e12).div(lpSupply)
             );
         }
-        return user.amount.mul(accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accRewardPerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -247,14 +251,14 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 sushiReward =
-            multiplier.mul(sushiPerBlock).mul(pool.allocPoint).div(
+        uint256 reward =
+            multiplier.mul(rewardPerBlock).mul(pool.allocPoint).div(
                 totalAllocPoint
             );
-        sushi.mint(devaddr, sushiReward.div(DEV_REWARD_DIVISOR)); // XXX sushi.mint(devaddr, sushiReward.div(10));
-        sushi.mint(address(this), sushiReward);
-        pool.accSushiPerShare = pool.accSushiPerShare.add(
-            sushiReward.mul(1e12).div(lpSupply)
+        rewardToken.mint(devaddr, reward.div(DEV_REWARD_DIVISOR)); // XXX sushi.mint(devaddr, sushiReward.div(10));
+        rewardToken.mint(address(this), reward);
+        pool.accRewardPerShare = pool.accRewardPerShare.add(
+            reward.mul(1e12).div(lpSupply)
         );
         pool.lastRewardBlock = block.number;
     }
@@ -266,10 +270,10 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
         updatePool(_pid);
         if (user.amount > 0) {
             uint256 pending =
-                user.amount.mul(pool.accSushiPerShare).div(1e12).sub(
+                user.amount.mul(pool.accRewardPerShare).div(1e12).sub(
                     user.rewardDebt
                 );
-            safeSushiTransfer(msg.sender, pending);
+            safeRewardTransfer(msg.sender, pending);
         }
         pool.lpToken.safeTransferFrom(
             address(msg.sender),
@@ -277,7 +281,7 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
             _amount
         );
         user.amount = user.amount.add(_amount);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accRewardPerShare).div(1e12);
 
         // XXX: Mint the staking credit for given pool; interactions => making sure at end given ERC1155 callback in _mint()
         _mint(msg.sender, _pid, _amount, "");
@@ -295,12 +299,12 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
         // XXX: Burn the staking credit for given pool; no ERC1155 callback in _burn()
         _burn(msg.sender, _pid, _amount);
         uint256 pending =
-            user.amount.mul(pool.accSushiPerShare).div(1e12).sub(
+            user.amount.mul(pool.accRewardPerShare).div(1e12).sub(
                 user.rewardDebt
             );
-        safeSushiTransfer(msg.sender, pending);
+        safeRewardTransfer(msg.sender, pending);
         user.amount = user.amount.sub(_amount);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accRewardPerShare).div(1e12);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
@@ -328,13 +332,13 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
         require(user.amount > 0, "harvest: not good");
         updatePool(_pid);
 
-        uint256 pending = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accRewardPerShare).div(1e12).sub(user.rewardDebt);
 
         // Effects
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accRewardPerShare).div(1e12);
 
         // Interactions
-        safeSushiTransfer(_to, pending);
+        safeRewardTransfer(_to, pending);
         emit Harvest(msg.sender, _pid, pending);
     }
 
@@ -358,7 +362,6 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
             uint256 pid = _ids[i];
             uint256 amount = _amounts[i];
 
-            PoolInfo storage pool = poolInfo[pid];
             UserInfo storage userFrom = userInfo[pid][_from];
             UserInfo storage userTo = userInfo[pid][_to];
             require(userFrom.amount >= amount, "transfer: not good");
@@ -378,7 +381,11 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
             // These updates conserve two quantities:
             //    1. total LP collateral: userFrom.amount + userTo.amount
             //    2. total pending rewards: pending(pid, userFrom) + pending(pid, userTo)
+            // With change in pending rewards, d(pending), sent from `userFrom` to `userTo` of:
             //
+            //    d(pending) = amount * ( pool.accRewardPerShare(t) - pool.accRewardPerShare(0) )
+            //
+            // where t=0 is last time `userFrom` harvested
             uint256 fromAmount = userFrom.amount;
             uint256 fromRewardDebt = userFrom.rewardDebt;
             userFrom.amount = fromAmount.sub(amount);
@@ -394,12 +401,13 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
     }
 
     // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
-    function safeSushiTransfer(address _to, uint256 _amount) internal {
-        uint256 sushiBal = sushi.balanceOf(address(this));
-        if (_amount > sushiBal) {
-            sushi.transfer(_to, sushiBal);
+    // XXX: function safeSushiTransfer(address _to, uint256 _amount) internal
+    function safeRewardTransfer(address _to, uint256 _amount) internal {
+        uint256 rewardBal = rewardToken.balanceOf(address(this));
+        if (_amount > rewardBal) {
+            rewardToken.transfer(_to, rewardBal);
         } else {
-            sushi.transfer(_to, _amount);
+            rewardToken.transfer(_to, _amount);
         }
     }
 

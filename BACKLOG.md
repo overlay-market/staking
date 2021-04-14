@@ -7,7 +7,7 @@ Things that need to be done, checked, verified, tested, etc.
 
 - [x] mint/burn ERC1155 in deposit/withdraw
 
-- [ ] SUSHI => OVL
+- [x] sushi => rewardToken
 
 - [x] alter init of original master chef tests to give minter role to chef contract for reward token
 

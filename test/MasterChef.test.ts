@@ -4,8 +4,9 @@ import { advanceBlockTo } from "./utilities"
 
 // COPIED AND MODIFIED from SushiSwap:
 // https://github.com/sushiswap/sushiswap/blob/master/test/MasterChef.test.ts
+// Here to check old tests from MasterChef still pass
 
-describe("OVLChef", function() {
+describe("MasterChef", function() {
   before(async function() {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
@@ -15,7 +16,7 @@ describe("OVLChef", function() {
     this.minter = this.signers[4]
 
     this.MasterChef = await ethers.getContractFactory("OVLChef")
-    this.SushiToken = await ethers.getContractFactory("RewardsTokenMock"); // Using rewards token with AccessControl
+    this.SushiToken = await ethers.getContractFactory("RewardTokenMock"); // Using rewards token with AccessControl
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter)
   })
 
@@ -40,7 +41,7 @@ describe("OVLChef", function() {
     await this.sushi.grantRole(await this.sushi.MINTER_ROLE(), this.chef.address)
     expect(await this.sushi.hasRole(await this.sushi.MINTER_ROLE(), this.chef.address)).is.true
 
-    const sushi = await this.chef.sushi()
+    const sushi = await this.chef.rewardToken() // XXX: await this.chef.sushi()
     const devaddr = await this.chef.devaddr()
     // const owner = await this.sushi.owner()
 
@@ -272,16 +273,20 @@ describe("OVLChef", function() {
       await advanceBlockTo("419")
       await this.chef.add("20", this.lp2.address, true)
       // Alice should have 10*1000 pending reward
-      expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("10000")
+      // XXX: expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("10000")
+      expect(await this.chef.pendingReward(0, this.alice.address)).to.equal("10000")
       // Bob deposits 10 LP2s at block 425
       await advanceBlockTo("424")
       await this.chef.connect(this.bob).deposit(1, "5", { from: this.bob.address })
       // Alice should have 10000 + 5*1/3*1000 = 11666 pending reward
-      expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("11666")
+      // XXX: expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("11666")
+      expect(await this.chef.pendingReward(0, this.alice.address)).to.equal("11666")
       await advanceBlockTo("430")
       // At block 430. Bob should get 5*2/3*1000 = 3333. Alice should get ~1666 more.
-      expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("13333")
-      expect(await this.chef.pendingSushi(1, this.bob.address)).to.equal("3333")
+      // XXX: expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("13333")
+      expect(await this.chef.pendingReward(0, this.alice.address)).to.equal("13333")
+      // XXX: expect(await this.chef.pendingSushi(1, this.bob.address)).to.equal("3333")
+      expect(await this.chef.pendingReward(1, this.bob.address)).to.equal("3333")
     })
 
     it("should stop giving bonus SUSHIs after the bonus period ends", async function() {
@@ -299,10 +304,12 @@ describe("OVLChef", function() {
       await this.chef.connect(this.alice).deposit(0, "10", { from: this.alice.address })
       // At block 605, she should have 1000*10 + 100*5 = 10500 pending.
       await advanceBlockTo("605")
-      expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("10500")
+      // XXX: expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("10500")
+      expect(await this.chef.pendingReward(0, this.alice.address)).to.equal("10500")
       // At block 606, Alice withdraws all pending rewards and should get 10600.
       await this.chef.connect(this.alice).deposit(0, "0", { from: this.alice.address })
-      expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("0")
+      // XXX: expect(await this.chef.pendingSushi(0, this.alice.address)).to.equal("0")
+      expect(await this.chef.pendingReward(0, this.alice.address)).to.equal("0")
       expect(await this.sushi.balanceOf(this.alice.address)).to.equal("10600")
     })
   })

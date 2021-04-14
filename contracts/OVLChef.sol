@@ -45,6 +45,8 @@ interface IMigratorChef {
 // Token can then be transferred/staked in other contracts for rewards
 // elsewhere (e.g. Overlay treasury contracts for trading fees)
 //
+// PROCEEDING WITH CAUTION ... test transfer of tokens rigorously
+//
 // XXX contract MasterChef is Ownable
 contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}.json") {
     using SafeMath for uint256;
@@ -351,7 +353,7 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
         }
 
         // Change user info for each pool id and amount before transferring staking credit
-        // Should simply move over, but NOT harvest, accumulated rewards
+        // Should simply move over, but NOT harvest, accumulated pending rewards
         for (uint256 i = 0; i < _ids.length; ++i) {
             uint256 pid = _ids[i];
             uint256 amount = _amounts[i];
@@ -360,32 +362,34 @@ contract OVLChef is Ownable, ERC1155("https://farm.overlay.market/api/pools/{id}
             UserInfo storage userFrom = userInfo[pid][_from];
             UserInfo storage userTo = userInfo[pid][_to];
             require(userFrom.amount >= amount, "transfer: not good");
+            updatePool(pid);
 
-            // Alter amounts for each user's pool share and reward debt given pending rewards to be transferred
-            // Readjust reward debts based on what rewardDebt would have been in prior deposit/withdraw if amount were changed to new value
-            // i.e. in prior deposit/withdraw to zero out rewards with harvest, we had set:
+            // Alter amounts for each user's pool share and reward debt given pending rewards to be transferred.
+            // `userFrom` transfers all pending rewards associated with `amount` of LP stake to `userTo`.
             //
-            //    user.rewardDebt = user.amount * pool.accSushiPerShare(t=0)
+            // New userInfo states are set, using "time" t as after state update and t-1 as before:
             //
-            // where t=0 indicates pool.accSushiPerShare value at last deposit/withdraw.
-            // pool.accSushiPerShare has potentially changed since then (more rewards accumulated; t -> t*), but we
-            // don't want to harvest them here. Instead transfer the rights to rewards accumulatedf such that
-            // after we change user.amount value in userInfo, we rescale reward debt by:
+            //    userFrom.amount(t) = userFrom.amount(t-1) - amount
+            //    userTo.amount(t) = userTo.amount(t-1) + amount
             //
-            //    newRewardDebt = oldRewardDebt * (newUserAmount / oldUserAmount) = newUserAmount * pool.accSushiPerShare(t=0)
+            //    userFrom.rewardDebt(t) = userFrom.amount(t) * ( userFrom.rewardDebt(t-1) / userFrom.amount(t-1) )
+            //    userTo.rewardDebt(t) = userTo.rewardDebt(t-1) + amount * ( userFrom.rewardDebt(t-1) / userFrom.amount(t-1) )
             //
-            // then pending reward changes to
-            //
-            //    new pending reward = (newUserAmount * pool.accSushiPerShare(t=t*)) - newRewardDebt
-            //                       = newUserAmount * (pool.accSushiPerShare(t=t*) - pool.accSushiPerShare(t=0))
+            // These updates conserve two quantities:
+            //    1. total LP collateral: userFrom.amount + userTo.amount
+            //    2. total pending rewards: pending(pid, userFrom) + pending(pid, userTo)
             //
             uint256 fromAmount = userFrom.amount;
+            uint256 fromRewardDebt = userFrom.rewardDebt;
             userFrom.amount = fromAmount.sub(amount);
-            userFrom.rewardDebt = userFrom.rewardDebt.mul(userFrom.amount).div(fromAmount);
+            userFrom.rewardDebt = userFrom.amount.mul(fromRewardDebt).div(fromAmount);
 
             uint256 toAmount = userTo.amount;
-            userTo.amount = userTo.amount.add(amount);
-            userTo.rewardDebt = userTo.rewardDebt.mul(userTo.amount).div(toAmount);
+            uint256 toRewardDebt = userTo.rewardDebt;
+            userTo.amount = toAmount.add(amount);
+            userTo.rewardDebt = toRewardDebt.add(
+                amount.mul(fromRewardDebt).div(fromAmount)
+            );
         }
     }
 

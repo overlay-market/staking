@@ -15,6 +15,10 @@ Things that need to be done, checked, verified, tested, etc.
 
 - [x] Fix transfer() rewardDebt update logic in _beforeTokenTransfer hook
 
+- [ ] Check no rounding issues in _beforeTokenTransfer with rewardDebt logic => shouldn't be a problem since reward debt is in amounts of 1e18 (reward token decimals)
+
+- [ ] Test mint/burn of ERC1155 credit on deposit/withdraw
+
 - [ ] Test transfer function hook HEAVILY to make sure is ok
   - [ ] Verify reward debt and amounts remain in sync
   - [ ] Verify harvested rewards prior to transfer are done properly
@@ -27,7 +31,9 @@ Things that need to be done, checked, verified, tested, etc.
 
 - [ ] Test emergency withdraw HEAVILY to make sure is ok
 
-- [ ] Treasury.sol (ERC1155 compatible/receiver)
+- [x] Treasury.sol (ERC1155 compatible/receiver)
+
+- [ ] Extend treasury to accommodate multiple pool 2s
 
 - [x] Investigate adding Keep3rV2OracleFactory.update(pair) call on updatePool()
   - [x] MasterChefToken needs to register as keeper?: Y OR remove keeper modifier on kv2of.update()

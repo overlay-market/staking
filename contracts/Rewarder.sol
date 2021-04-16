@@ -49,7 +49,8 @@ contract Rewarder is IRewarder {
         // Interactions
         if (amount > 0 && _sushiAmount > 0) {
             // Send reward share on harvest
-            uint256 reward = pendingToken(_pid, _user);
+            uint256 total = ChefV2(CHEF_V2).lpToken(_pid).balanceOf(CHEF_V2);
+            uint256 reward = rewardToken.balanceOf(address(this)).mul(amount) / total;
             rewardToken.safeTransfer(_to, reward);
         }
     }

@@ -9,6 +9,7 @@
     "url": "https://github.com/overlay-market/staking.git"
   },
   "devDependencies": {
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.1",
     "@nomiclabs/hardhat-solhint": "^2.0.0",
@@ -32,5 +33,6 @@
     "ts-node": "^9.1.1",
     "typechain": "^4.0.3",
     "typescript": "^4.2.4"
-  }
+  },
+  "dependencies": {}
 }

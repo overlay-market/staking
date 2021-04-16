@@ -110,11 +110,13 @@ interface IMigratorChef {
     function migrate(IERC20 token) external returns (IERC20);
 }
 
-/// @notice The (older) MasterChef contract gives out a constant number of SUSHI tokens per block.
-/// It is the only address with minting rights for SUSHI.
-/// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
-/// that is deposited into the MasterChef V1 (MCV1) contract.
-/// The allocation point for this pool on MCV1 is the total allocation point for all pools that receive double incentives.
+
+/// @notice Adapting MCV2 contract to act more like MCV1 as the base liquidity mining contract,
+/// but allowing for double incentives through rewarders.
+/// Similar to indexed-finance/staking-rewards, it is assumed source of rewards tokens (SUSHI) comes from
+/// some another account with minting priveleges transferring to ChefV2 prior to distribution.
+/// Distributed rewards per block (sushiPerBlock()) are a constant amount of MASTERCHEF_SUSHI_PER_BLOCK.
+/// Removed dummy token and MCV1 contract references.
 contract ChefV2 is BoringOwnable, BoringBatchable {
     using BoringMath for uint256;
     using BoringMath128 for uint128;

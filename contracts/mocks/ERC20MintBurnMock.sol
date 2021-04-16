@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 
-contract RewardTokenMock is AccessControl, ERC20("RewardToken", "RT") {
+contract ERC20MintBurnMock is AccessControl, ERC20("Mint Burn Token", "MBT") {
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");

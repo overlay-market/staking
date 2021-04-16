@@ -6,7 +6,7 @@ import { advanceBlockTo, advanceBlock, prepare, deploy, getBigNumber, ADDRESS_ZE
 // commit hash e409abb8dc7de6b0b1dcd60c81ea2651e54b4dd9
 //
 // Removed mcv1 chef => means only mcv2 pools so no need to div expected rewards by 2
-// SEE: chefv2.sushiPerBlock() modification 
+// SEE: chefv2.sushiPerBlock modification
 
 describe("ChefV2", function() {
   before(async function() {

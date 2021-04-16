@@ -65,7 +65,7 @@ contract PoolRewarder is IRewarder {
         return (_rewardTokens, _rewardAmounts);
     }
 
-    function pendingToken(uint256 _pid, address _user) public returns (uint256) {
+    function pendingToken(uint256 _pid, address _user) public view returns (uint256) {
         if (_pid != rewardPoolId) {
             return 0;
         }

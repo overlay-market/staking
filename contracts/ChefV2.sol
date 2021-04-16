@@ -115,7 +115,7 @@ interface IMigratorChef {
 /// but allowing for double incentives through rewarders.
 /// Similar to indexed-finance/staking-rewards, it is assumed source of rewards tokens (SUSHI) comes from
 /// some another account with minting priveleges transferring to ChefV2 prior to distribution.
-/// Distributed rewards per block (sushiPerBlock()) are a constant amount of MASTERCHEF_SUSHI_PER_BLOCK.
+/// Distributed rewards per block (sushiPerBlock()) are a constant amount equal to MASTERCHEF_SUSHI_PER_BLOCK.
 /// Removed dummy token and MCV1 contract references.
 contract ChefV2 is BoringOwnable, BoringBatchable {
     using BoringMath for uint256;

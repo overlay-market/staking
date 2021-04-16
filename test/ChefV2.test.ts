@@ -4,10 +4,13 @@ import { advanceBlockTo, advanceBlock, prepare, deploy, getBigNumber, ADDRESS_ZE
 // COPIED AND MODIFIED from SushiSwap
 // https://github.com/sushiswap/sushiswap/blob/master/test/MasterChefV2.test.ts
 // commit hash e409abb8dc7de6b0b1dcd60c81ea2651e54b4dd9
+//
+// Removed mcv1 chef => means only mcv2 pools so no need to div expected rewards by 2
+// SEE: chefv2.sushiPerBlock() modification 
 
-describe("MasterChefV2", function() {
+describe("ChefV2", function() {
   before(async function() {
-    await prepare(this, ['ERC20MintBurnMock', 'ERC20Mock', 'ChefV2', 'RewarderMock', 'RewarderBrokenMock'])
+    await prepare(this, ['ERC20AccessControlMock', 'ERC20Mock', 'ChefV2', 'RewarderMock', 'RewarderBrokenMock'])
     await deploy(this, [
       ["brokenRewarder", this.RewarderBrokenMock]
     ])
@@ -15,7 +18,7 @@ describe("MasterChefV2", function() {
 
   beforeEach(async function() {
     await deploy(this, [
-      ["sushi", this.ERC20MintBurnMock],
+      ["sushi", this.ERC20AccessControlMock],
     ])
 
     await deploy(this,
@@ -24,7 +27,6 @@ describe("MasterChefV2", function() {
         // ['chef', this.MasterChef, [this.sushi.address, this.bob.address, getBigNumber(100), "0", "0"]]
       ])
 
-    // TODO: Replace ...
     //await this.sushi.transferOwnership(this.chef.address)
     //await this.chef.add(100, this.lp.address, true)
     //await this.chef.add(100, this.dummy.address, true)
@@ -37,8 +39,9 @@ describe("MasterChefV2", function() {
       ["r", this.ERC20Mock, ["Reward", "RewardT", getBigNumber(100000)]],
     ])
     await deploy(this, [["rewarder", this.RewarderMock, [getBigNumber(1), this.r.address]]])
-    await this.dummy.approve(this.chef2.address, getBigNumber(10))
+    //await this.dummy.approve(this.chef2.address, getBigNumber(10))
     // await this.chef2.init(this.dummy.address)
+    await this.sushi.mint(this.chef2.address, getBigNumber(1000000))
     await this.rlp.transfer(this.bob.address, getBigNumber(1))
   })
 
@@ -80,7 +83,7 @@ describe("MasterChefV2", function() {
       await advanceBlock()
       let log2 = await this.chef2.updatePool(0)
       await advanceBlock()
-      let expectedSushi = getBigNumber(100).mul(log2.blockNumber + 1 - log.blockNumber).div(2)
+      let expectedSushi = getBigNumber(100).mul(log2.blockNumber + 1 - log.blockNumber) // XXX: Don't have an original MCV1 anymore with 2 pools on beforeEach ... don't divide by 2: .div(2)
       let pendingSushi = await this.chef2.pendingSushi(0, this.alice.address)
       expect(pendingSushi).to.be.equal(expectedSushi)
     })
@@ -90,7 +93,7 @@ describe("MasterChefV2", function() {
       let log = await this.chef2.deposit(0, getBigNumber(1), this.alice.address)
       await advanceBlockTo(3)
       let log2 = await this.chef2.updatePool(0)
-      let expectedSushi = getBigNumber(100).mul(log2.blockNumber - log.blockNumber).div(2)
+      let expectedSushi = getBigNumber(100).mul(log2.blockNumber - log.blockNumber) //.div(2)
       let pendingSushi = await this.chef2.pendingSushi(0, this.alice.address)
       expect(pendingSushi).to.be.equal(expectedSushi)
     })
@@ -188,9 +191,9 @@ describe("MasterChefV2", function() {
       expect(await this.chef2.lpToken(0)).to.be.equal(this.rlp.address)
       let log = await this.chef2.deposit(0, getBigNumber(1), this.alice.address)
       await advanceBlockTo(20)
-      await this.chef2.harvestFromMasterChef()
+      //await this.chef2.harvestFromMasterChef()
       let log2 = await this.chef2.withdraw(0, getBigNumber(1), this.alice.address)
-      let expectedSushi = getBigNumber(100).mul(log2.blockNumber - log.blockNumber).div(2)
+      let expectedSushi = getBigNumber(100).mul(log2.blockNumber - log.blockNumber) //.div(2)
       expect((await this.chef2.userInfo(0, this.alice.address)).rewardDebt).to.be.equal("-" + expectedSushi)
       await this.chef2.harvest(0, this.alice.address)
       expect(await this.sushi.balanceOf(this.alice.address)).to.be.equal(await this.r.balanceOf(this.alice.address)).to.be.equal(expectedSushi)
@@ -206,9 +209,9 @@ describe("MasterChefV2", function() {
       expect(await this.chef2.lpToken(0)).to.be.equal(this.rlp.address)
       let log = await this.chef2.deposit(0, getBigNumber(1), this.alice.address)
       await advanceBlock()
-      await this.chef2.harvestFromMasterChef()
+      // await this.chef2.harvestFromMasterChef()
       let log2 = await this.chef2.withdraw(0, getBigNumber(1), this.alice.address)
-      let expectedSushi = getBigNumber(100).mul(log2.blockNumber - log.blockNumber).div(2)
+      let expectedSushi = getBigNumber(100).mul(log2.blockNumber - log.blockNumber)//.div(2)
       expect((await this.chef2.userInfo(0, this.alice.address)).rewardDebt).to.be.equal("-" + expectedSushi)
       await this.chef2.harvest(0, this.alice.address)
       expect(await this.sushi.balanceOf(this.alice.address)).to.be.equal(expectedSushi)

@@ -11,14 +11,13 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 /// Inherits from SushiSwap MCV2 IRewarder. onSushiReward() hook is called
 /// on every MCV2.deposit/withdraw/harvest() function call, and transfers
 /// a share of additional reward tokens funds pooled in this contract to
-/// MCV2 pool 2 LPs.
+/// MCV2 pool 2 LPs on harvest.
 contract PoolRewarder is IRewarder {
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
     uint256 private immutable rewardPoolId;
     IERC20 private immutable rewardToken;
     address private immutable CHEF_V2;
-    uint256 private constant REWARD_TOKEN_DIVISOR = 1e18;
 
     constructor (IERC20 _rewardToken, uint256 _rewardPoolId, address _CHEF_V2) public {
         rewardToken = _rewardToken;

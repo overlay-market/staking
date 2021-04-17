@@ -1,4 +1,4 @@
-import { expect, assert } from 'chai'
+import { expect } from 'chai'
 import { prepare, deploy, getBigNumber } from "./utilities"
 
 
@@ -8,10 +8,13 @@ describe("PoolRewarder", function() {
   })
 
   beforeEach(async function() {
+    // Deploy the reward token
     await deploy(this, [
       ['rewardToken', this.ERC20AccessControlMock],
     ])
 
+    // Deploy base liquidity mining contract (chef) and mock LP tokens to
+    // deposit into farms
     await deploy(this, [
       ['chef', this.ChefV2, [this.rewardToken.address]],
       ["rlp0", this.ERC20Mock, ["LP0", "rLP0T", getBigNumber(10)]],
@@ -19,15 +22,16 @@ describe("PoolRewarder", function() {
       ["rlp2", this.ERC20Mock, ["LP2", "rLP2T", getBigNumber(10)]],
     ])
 
-    // Deploy pool rewarder
+    // Deploy pool rewarder to be called on each deposit/withdraw/harvest
+    // on chef
     await deploy(this, [
       ['rewarder', this.PoolRewarder, [this.rewardToken.address, this.chef.address]]
     ])
 
-    // Mint to chef for distribution
+    // Mint to chef for liquidity mining distribution
     await this.rewardToken.mint(this.chef.address, getBigNumber(1000000))
 
-    // Add pools
+    // Add LP pools to be rewarded by chef
     await this.chef.add(10, this.rlp0.address, this.rewarder.address)
     await this.chef.add(10, this.rlp1.address, this.rewarder.address)
     await this.chef.add(20, this.rlp2.address, this.rewarder.address) // pool2
@@ -57,5 +61,13 @@ describe("PoolRewarder", function() {
       expect(await this.rewarder.poolAllocPoint(2)).to.be.equal(20)
       expect(await this.rewarder.totalAllocPoint()).to.be.equal(35)
     })
+  })
+
+  describe("onSushiReward", function() {
+
+  })
+
+  describe("pendingTokens", function() {
+
   })
 })

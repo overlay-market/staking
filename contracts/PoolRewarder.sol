@@ -39,7 +39,7 @@ contract PoolRewarder is IRewarder, BoringOwnable {
         poolAllocPoint[_pid] = _allocPoint;
     }
 
-    // Sends share of pooled funds in rewarder contract to LP provider in pool `rewardPoolId` of MCV2
+    /// @notice Sends LP's share of pending double rewards pooled in this contract
     function onSushiReward(uint256 _pid, address _user, address _to, uint256 _sushiAmount, uint256 _newLpAmount) onlyMCV2 override external {
         // Effects
         uint256 amount = userAmount[_pid][_user];
@@ -56,6 +56,7 @@ contract PoolRewarder is IRewarder, BoringOwnable {
         }
     }
 
+    /// @notice Displays LP's share of pending double rewards pooled in this contract
     function pendingTokens(uint256 _pid, address _user, uint256 _sushiAmount) override external returns (IERC20[] memory rewardTokens, uint256[] memory rewardAmounts) {
         IERC20[] memory _rewardTokens = new IERC20[](1);
         _rewardTokens[0] = (rewardToken);

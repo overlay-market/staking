@@ -8,10 +8,10 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 
 
-/// @notice Use for double rewards to MCV2 pool 2 LPs. onSushiReward hook is called
-/// on every CHEF_V2.deposit/withdraw/harvest function call, and transfers
-/// a share of additional reward funds pooled in this contract to
-/// LPs staking in CHEF_V2 pool with rewardPoolId on CHEF_V2.harvest.
+/// @notice Use for double rewards to ChefV2 pool LPs. onSushiReward hook is called
+/// on every ChefV2 deposit/withdraw/harvest function call. On harvest, PoolRewarder
+/// transfers a share of additional reward funds pooled in this contract to
+/// LPs.
 contract PoolRewarder is IRewarder, BoringOwnable {
     using BoringMath for uint256;
     using BoringERC20 for IERC20;

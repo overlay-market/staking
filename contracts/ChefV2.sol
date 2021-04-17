@@ -111,7 +111,7 @@ interface IMigratorChef {
 }
 
 
-/// @notice Adapting MCV2 contract to act more like MCV1 as the base liquidity mining contract,
+/// @notice Adapting MasterChefV2 contract to act more like MasterChefV1 as the base liquidity mining contract,
 /// but allowing for double incentives through rewarders.
 /// Similar to indexed-finance/staking-rewards, it is assumed source of rewards tokens (SUSHI) comes from
 /// some another account with minting priveleges transferring to ChefV2 prior to distribution.

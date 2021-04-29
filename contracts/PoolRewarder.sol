@@ -57,7 +57,7 @@ contract PoolRewarder is IRewarder, BoringOwnable {
     }
 
     /// @notice Displays LP's share of pending double rewards pooled in this contract
-    function pendingTokens(uint256 _pid, address _user, uint256 _sushiAmount) override external returns (IERC20[] memory rewardTokens, uint256[] memory rewardAmounts) {
+    function pendingTokens(uint256 _pid, address _user, uint256 _sushiAmount) override external view returns (IERC20[] memory rewardTokens, uint256[] memory rewardAmounts) {
         IERC20[] memory _rewardTokens = new IERC20[](1);
         _rewardTokens[0] = (rewardToken);
         uint256[] memory _rewardAmounts = new uint256[](1);

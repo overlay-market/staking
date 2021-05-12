@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { prepare, deploy, getBigNumber } from "./utilities"
+import { prepare, deploy, getBigNumber, advanceBlock } from "./utilities"
 
 
 describe("PoolRewarder", function() {
@@ -64,8 +64,45 @@ describe("PoolRewarder", function() {
   })
 
   describe("onSushiReward", function() {
+    it("Should give back correct amount of additional trading fee rewards with One LP", async function() {
+      await this.rewardToken.mint(this.rewarder.address, getBigNumber(1))
+      await this.rewarder.set(0, 20)
+      expect(await this.rewarder.poolAllocPoint(0)).to.be.equal(20)
+      expect(await this.rewarder.totalAllocPoint()).to.be.equal(20)
+      await this.rlp0.approve(this.chef.address, getBigNumber(10))
+      expect(await this.chef.lpToken(0)).to.be.equal(this.rlp0.address)
+      let log1 = await this.chef.deposit(0, getBigNumber(5), this.alice.address)
+      await advanceBlock();
+      let expectedUserLpShares = getBigNumber(5);
+      let expectedTotalLpShares = getBigNumber(5);
+      let expectedRewardsInPoolRewarder = getBigNumber(1);
+      let expectedWeightForRewardPool = 20 / 20;
+      let expectedPoolRewards = expectedRewardsInPoolRewarder.mul(expectedUserLpShares / expectedTotalLpShares).mul(expectedWeightForRewardPool);
+      let log2 = await this.chef.harvest(0, this.alice.address);
+      let expectedSushi = getBigNumber(100).mul(log2.blockNumber - log1.blockNumber).mul(getBigNumber(10)).div(getBigNumber(40));
+      expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(expectedPoolRewards.add(expectedSushi));
+    })
 
-  })
+    it("Should give back correct amount of additional trading fee rewards with multiple LPs", async function() {
+      await this.rewardToken.mint(this.rewarder.address, getBigNumber(5))
+      await this.rewarder.set(0, 20)
+      await this.rewarder.set(1, 20)
+      expect(await this.rewarder.poolAllocPoint(0)).to.be.equal(20)
+      expect(await this.rewarder.totalAllocPoint()).to.be.equal(40)
+      await this.rlp0.approve(this.chef.address, getBigNumber(10))
+      expect(await this.chef.lpToken(0)).to.be.equal(this.rlp0.address)
+      let log1 = await this.chef.deposit(0, getBigNumber(10), this.alice.address)
+      await advanceBlock()
+      let expectedUserLpShares = getBigNumber(10);
+      let expectedTotalLpShares = getBigNumber(10);
+      let expectedRewardsInPoolRewarder = getBigNumber(5);
+      let expectedWeightForRewardPool = 20;
+      let expectedPoolRewards = expectedRewardsInPoolRewarder.mul(expectedUserLpShares).div(expectedTotalLpShares).mul(expectedWeightForRewardPool).div(40);
+      let log2 = await this.chef.harvest(0, this.alice.address);
+      let expectedSushi = getBigNumber(100).mul(log2.blockNumber - log1.blockNumber).mul(getBigNumber(10)).div(getBigNumber(40));
+      expect(await this.rewardToken.balanceOf(this.alice.address)).to.be.equal(expectedPoolRewards.add(expectedSushi));
+    })
+})
 
   describe("pendingTokens", function() {
 
